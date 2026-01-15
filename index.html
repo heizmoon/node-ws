@@ -16,9 +16,7 @@
         body {
             margin: 0;
             padding: 0;
-            /* 使用固定背景，增加随机种子避免加载失败 */
-            background: #0d0221 url('https://image.pollinations.ai/prompt/anime%20scenery%20starry%20night%20sky%20nebula%20dreamlike%20purple%20and%20pink%20colors?width=1280&height=720&nologo=true&seed=999') no-repeat center center fixed;
-            background-size: cover;
+            background-color: #0d0221;
             color: #fff;
             font-family: 'Noto Serif SC', 'Noto Serif JP', serif;
             min-height: 100vh;
@@ -26,23 +24,51 @@
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
-            /* 魔法棒光标 */
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23ff85a2" stroke="%23fff" stroke-width="1.5" d="M24.5,2.5 L29.5,7.5 L12,25 L7,20 L24.5,2.5 Z M2,30 L5,27 L8,30 L5,33 Z" /><circle cx="5" cy="30" r="2" fill="%23ffd700"/></svg>') 0 32, auto;
+        }
+
+        /* 背景容器，用于处理本地图失败回退AI图 */
+        #bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 1s ease;
         }
 
         h1 {
             font-size: 3rem;
-            margin: 40px 0;
+            margin: 40px 0 10px 0;
             text-align: center;
             background: linear-gradient(to bottom, #fff, var(--primary-pink));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 15px var(--primary-pink));
             letter-spacing: 8px;
-            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
         }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        h1:hover {
+            filter: drop-shadow(0 0 25px var(--accent-gold));
+            transform: scale(1.05);
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+            color: var(--accent-gold);
+            opacity: 0.8;
+            letter-spacing: 2px;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.9; } }
 
         .character-container {
             display: flex;
@@ -67,6 +93,22 @@
             cursor: pointer;
         }
 
+        .loading::after {
+            content: "召唤中...";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            color: var(--primary-pink);
+            font-weight: bold;
+            z-index: 20;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
         .img-wrapper {
             width: 100%;
             height: 100%;
@@ -80,27 +122,21 @@
             object-fit: cover;
             filter: brightness(0.8);
             transition: all 0.6s ease;
+            opacity: 0;
         }
 
-        .char-card:hover {
-            transform: translateY(-20px);
-            border-color: var(--primary-pink);
-            box-shadow: 0 0 40px var(--primary-pink);
-        }
+        .char-img.loaded { opacity: 1; }
 
-        .char-card:hover .char-img {
-            transform: scale(1.15);
-            filter: brightness(1.1);
-        }
+        .char-card:hover { transform: translateY(-20px); border-color: var(--primary-pink); box-shadow: 0 0 40px var(--primary-pink); }
+        .char-card:hover .char-img { transform: scale(1.1); filter: brightness(1.1); }
 
-        /* 魔法阵特效 */
         .magic-circle {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 350px;
-            height: 350px;
-            background: url('https://image.pollinations.ai/prompt/glowing%20white%20magic%20summoning%20circle%20complex%20geometry%20isolated%20on%20black?width=512&height=512&nologo=true') no-repeat center;
+            width: 320px;
+            height: 320px;
+            background: url('https://image.pollinations.ai/prompt/simple%20white%20magic%20summoning%20circle%20geometric%20pattern%20black%20background?width=512&height=512&nologo=true&seed=1') no-repeat center;
             background-size: contain;
             transform: translate(-50%, -50%) scale(0);
             opacity: 0;
@@ -111,61 +147,52 @@
         }
 
         .char-card:hover .magic-circle {
-            opacity: 0.7;
-            transform: translate(-50%, -50%) scale(0.9) rotate(360deg);
-            animation: spin 12s linear infinite;
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(0.85) rotate(360deg);
+            animation: spin 15s linear infinite;
         }
 
-        @keyframes spin { to { transform: translate(-50%, -50%) scale(0.9) rotate(360deg); } }
+        @keyframes spin { to { transform: translate(-50%, -50%) scale(0.85) rotate(360deg); } }
 
-        /* 粒子特效 */
         .particles { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
-        .p { position: absolute; bottom: -10px; background: #fff; border-radius: 50%; opacity: 0; filter: blur(1px); }
-        .char-card:hover .p { animation: rise 1.8s ease-out infinite; }
+        .p { position: absolute; bottom: -10px; background: #fff; border-radius: 50%; opacity: 0; }
+        .char-card:hover .p { animation: rise 2s ease-out infinite; }
+        @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: 0.8; } 100% { transform: translateY(-250px); opacity: 0; } }
 
-        @keyframes rise {
-            0% { transform: translateY(0) scale(1); opacity: 0; }
-            30% { opacity: 0.8; }
-            100% { transform: translateY(-250px) scale(0); opacity: 0; }
-        }
-
-        /* 底部信息栏 */
         #magic-display {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             height: 250px;
-            background: rgba(13, 2, 33, 0.98);
+            background: rgba(13, 2, 33, 0.95);
+            backdrop-filter: blur(15px);
             display: flex;
             align-items: center;
             justify-content: center;
             transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            border-top: 3px solid var(--primary-pink);
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            border-top: 2px solid var(--primary-pink);
             z-index: 100;
         }
 
         #magic-display.show { transform: translateY(0); }
-
-        .display-content { display: flex; align-items: center; max-width: 1100px; width: 90%; gap: 40px; }
-        .crest-box { width: 160px; height: 160px; position: relative; }
-        .crest-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px var(--primary-pink)); }
+        .display-content { display: flex; align-items: center; max-width: 1000px; width: 90%; gap: 40px; }
+        .crest-box { width: 150px; height: 150px; }
+        .crest-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px var(--primary-pink)); }
         .info-box { flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 30px; }
-        .info-col h2 { color: var(--primary-pink); margin: 0 0 15px 0; font-size: 2rem; }
-        .info-col p { line-height: 1.8; font-size: 1.1rem; color: #ddd; }
-        .close-btn { position: absolute; top: 20px; right: 30px; cursor: pointer; font-size: 32px; color: #fff; }
+        .info-col h2 { color: var(--primary-pink); margin: 0 0 10px 0; }
+        .close-btn { position: absolute; top: 20px; right: 30px; cursor: pointer; font-size: 30px; }
 
     </style>
 </head>
 <body>
 
-    <h1>✨ 魔法少女契約書 ✨</h1>
+    <div id="bg-overlay"></div>
+    <h1 id="summon-title">✨ 魔法少女契約書 ✨</h1>
+    <div class="subtitle">( 点击标题召唤全新的命运 )</div>
 
-    <div class="character-container" id="card-container">
-        <!-- 角色卡片将由 JS 动态生成以增加随机种子 -->
-    </div>
+    <div class="character-container" id="card-container"></div>
 
     <div id="magic-display">
         <div class="close-btn" onclick="hideDetails()">×</div>
@@ -179,73 +206,127 @@
     </div>
 
     <script>
-        const characters = [
-            {
-                id: 1,
-                name: "绯红 · 艾丽莎",
-                nameJp: "緋色のエマ",
-                desc: "掌握极意之火的少女。她的契约是为了驱散世间的寒冷与阴霾。必杀技是「红莲大爆裂」。",
-                descJp: "極意の火を操る少女。彼女の契約は世界の寒さと闇を払うためのもの。必殺技は「紅蓮大爆裂」。",
-                hue: 0,
-                prompt: "anime girl magical girl red frilly dress fire magic fireball masterpiece 4k"
-            },
-            {
-                id: 2,
-                name: "苍蓝 · 塞勒涅",
-                nameJp: "蒼藍のセレネ",
-                desc: "月光下的寒冰使者。拥有冻结时间的神圣力量，性格冷静。契约愿望是「永恒的安宁」。",
-                descJp: "月光の下の氷の使者。時間を凍結させる神聖な力を持ち、冷静な性格。願いは「永遠の安らぎ」。",
-                hue: 210,
-                prompt: "anime girl magical girl blue elegant dress ice crystal snow magic masterpiece 4k"
-            },
-            {
-                id: 3,
-                name: "翠绿 · 温迪",
-                nameJp: "翠緑のウェンディ",
-                desc: "风之精灵的宠儿。能够治愈万物并操控暴风。她的契约源于对大自然的热爱。",
-                descJp: "風の精霊の愛し子。万物を癒やし、嵐を操る。彼女の契約は大自然への愛から生まれた。",
-                hue: 120,
-                prompt: "anime girl magical girl green outfit wind magic leaves nature wings masterpiece 4k"
-            }
+        // 丰富的角色随机库
+        const namePool = [
+            { cn: "月咏 · 祈丽", jp: "月詠 · イノリ", attr: "月光", hue: 260, prompt: "moonlight silver hair purple eyes crescent moon staff" },
+            { cn: "星宫 · 璃乃", jp: "星宮 · りの", attr: "星辰", hue: 200, prompt: "starry hair blue dress constellations magic" },
+            { cn: "樱华 · 萌波", jp: "桜華 · もなみ", attr: "樱花", hue: 330, prompt: "cherry blossom petals pink kimono-style dress" },
+            { cn: "雷鸣 · 凛卡", jp: "雷鳴 · リンカ", attr: "雷电", hue: 50, prompt: "yellow lightning electric sparks confident expression" },
+            { cn: "深海 · 汐里", jp: "深海 · しおり", attr: "海洋", hue: 180, prompt: "underwater theme bubbles blue long hair jellyfish dress" },
+            { cn: "冥途 · 尤娜", jp: "冥途 · ユナ", attr: "幽冥", hue: 280, prompt: "gothic lolita dark magic shadowy aura butterfly wings" }
         ];
 
+        const descPool = [
+            { cn: "拥有操控{attr}的契约之力，立志要将这个世界从黑暗中拯救。", jp: "{attr}を操る契約の力を持ち、世界を闇から救うことを誓う。" },
+            { cn: "被{attr}所选中的少女，在寂静的夜里守护着城市。必杀技是「{attr}冲击」。", jp: "{attr}に選ばれし少女。静かな夜に街を守り続ける。必殺技は「{attr}インパクト」。" },
+            { cn: "作为{attr}的使徒，她冷峻的外表下藏着一颗温柔的心。", jp: "{attr}の使徒として、クールな外見の裏に優しい心を持っている。" }
+        ];
+
+        const bgOverlay = document.getElementById('bg-overlay');
         const container = document.getElementById('card-container');
+        const title = document.getElementById('summon-title');
 
-        // 动态生成卡片，加入随机种子避免缓存或频率限制
-        characters.forEach(char => {
-            const seed = Math.floor(Math.random() * 100000);
-            const card = document.createElement('div');
-            card.className = 'char-card';
-            card.onclick = () => showDetails(char, seed);
+        // 初始化背景
+        function initBackground() {
+            const localBg = 'images/bg.jpg';
+            const aiBg = 'https://image.pollinations.ai/prompt/anime%20scenery%20starry%20night%20sky%20nebula%20dreamlike?width=1920&height=1080&nologo=true&seed=123';
             
-            card.innerHTML = `
-                <div class="img-wrapper">
-                    <img src="https://image.pollinations.ai/prompt/${encodeURIComponent(char.prompt)}?width=400&height=600&nologo=true&seed=${seed}" class="char-img">
-                </div>
-                <div class="magic-circle" style="filter: hue-rotate(${char.hue}deg) brightness(1.5);"></div>
-                <div class="particles">
-                    ${Array(5).fill(0).map((_, i) => `<div class="p" style="left:${20+i*15}%; animation-delay:${i*0.3}s; width:${3+i}px; height:${3+i}px;"></div>`).join('')}
-                </div>
-            `;
-            container.appendChild(card);
-        });
+            const tempImg = new Image();
+            tempImg.src = localBg;
+            tempImg.onload = () => { bgOverlay.style.backgroundImage = `url(${localBg})`; };
+            tempImg.onerror = () => { bgOverlay.style.backgroundImage = `url(${aiBg})`; };
+        }
 
-        function showDetails(char, seed) {
-            // 纹章也加入随机种子
-            const crestPrompt = encodeURIComponent(`${char.name} magic symbol emblem crest high quality gold glowing`);
-            document.getElementById('d-crest').src = `https://image.pollinations.ai/prompt/${crestPrompt}?width=300&height=300&nologo=true&seed=${seed}`;
+        // 创建随机角色数据
+        function getRandomChar(id) {
+            const base = namePool[Math.floor(Math.random() * namePool.length)];
+            const descTpl = descPool[Math.floor(Math.random() * descPool.length)];
+            return {
+                id: id,
+                name: base.cn,
+                nameJp: base.jp,
+                hue: base.hue,
+                prompt: `anime girl magical girl ${base.prompt} masterpiece 2d highres`,
+                desc: descTpl.cn.replace(/{attr}/g, base.attr),
+                descJp: descTpl.jp.replace(/{attr}/g, base.attr),
+                localImg: `images/char${id}.jpg`
+            };
+        }
+
+        let currentChars = [];
+
+        // 初始化/刷新卡片
+        async function refreshCards(isAI = false) {
+            container.innerHTML = '';
+            currentChars = [];
             
+            for (let i = 1; i <= 3; i++) {
+                const charData = getRandomChar(i);
+                currentChars.push(charData);
+
+                const card = document.createElement('div');
+                card.className = 'char-card';
+                card.id = `card-${i}`;
+                card.innerHTML = `
+                    <div class="img-wrapper">
+                        <img id="img-${i}" class="char-img">
+                    </div>
+                    <div class="magic-circle" style="filter: hue-rotate(${charData.hue}deg) brightness(1.5);"></div>
+                    <div class="particles">
+                        ${Array(5).fill(0).map((_, pidx) => `<div class="p" style="left:${20+pidx*15}%; animation-delay:${pidx*0.3}s; width:4px; height:4px;"></div>`).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+
+                const img = document.getElementById(`img-${i}`);
+                
+                if (isAI) {
+                    // AI 召唤逻辑
+                    card.classList.add('loading');
+                    const seed = Math.floor(Math.random() * 99999);
+                    const aiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(charData.prompt)}?width=400&height=600&nologo=true&seed=${seed}`;
+                    
+                    img.src = aiUrl;
+                    img.onload = () => { img.classList.add('loaded'); card.classList.remove('loading'); };
+                    img.onerror = () => { img.src = charData.localImg; card.classList.remove('loading'); };
+                    
+                    card.onclick = () => showDetails(charData, aiUrl);
+                } else {
+                    // 默认加载逻辑：先试本地，不行再AI
+                    img.src = charData.localImg;
+                    img.onload = () => img.classList.add('loaded');
+                    img.onerror = () => {
+                        const seed = 888 + i;
+                        const aiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(charData.prompt)}?width=400&height=600&nologo=true&seed=${seed}`;
+                        img.src = aiUrl;
+                        img.onload = () => img.classList.add('loaded');
+                    };
+                    card.onclick = () => showDetails(charData, img.src);
+                }
+                
+                // 稍微错开AI召唤的请求时间
+                if (isAI) await new Promise(r => setTimeout(r, 800));
+            }
+        }
+
+        function showDetails(char, currentImg) {
+            document.getElementById('d-crest').src = `https://image.pollinations.ai/prompt/magic%20crest%20emblem%20isolated%20on%20black?nologo=true&seed=${char.hue}`;
+            document.getElementById('d-crest').style.filter = `hue-rotate(${char.hue}deg) brightness(2)`;
             document.getElementById('d-name').innerText = char.name;
             document.getElementById('d-name-jp').innerText = char.nameJp;
             document.getElementById('d-desc').innerText = char.desc;
             document.getElementById('d-desc-jp').innerText = char.descJp;
-            
             document.getElementById('magic-display').classList.add('show');
         }
 
-        function hideDetails() {
-            document.getElementById('magic-display').classList.remove('show');
-        }
+        function hideDetails() { document.getElementById('magic-display').classList.remove('show'); }
+
+        title.addEventListener('click', () => refreshCards(true));
+
+        window.onload = () => {
+            initBackground();
+            refreshCards(false);
+        };
     </script>
 </body>
 </html>
